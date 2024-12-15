@@ -18,5 +18,8 @@ pnpm dev
 bun dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Please note that the csv-backend needs to be running for this to be working. 
+
+Open http://localhost:3000 with your browser to interact with the UI.
+
 
