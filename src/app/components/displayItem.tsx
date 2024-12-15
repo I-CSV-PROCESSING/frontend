@@ -10,6 +10,8 @@ import {
   CircularProgress,
   Typography,
   TablePagination,
+  TextField,
+  MenuItem,
 } from '@mui/material';
 
 interface KeySearch {
@@ -42,14 +44,30 @@ const UserTable: React.FC = () => {
   const [page, setPage] = useState<number>(0);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [disableNext, setDisableNext] = useState<boolean>(false);
+  const [searchKey, setSearchKey] = useState<string>('');
+  const [searchValue, setSearchValue] = useState<string>('');
+
+  const debouncedSearchKey = useDebounce(searchKey, 300);
+  const debouncedSearchValue = useDebounce(searchValue, 300);
 
   useEffect(() => {
     const fetchData = async () => {
-      const filters = {
-        limit: rowsPerPage,
-        offset: page * rowsPerPage
-      }
       setLoading(true);
+
+      const filtersBody: SearchFilters = {
+        limit: rowsPerPage,
+        offset: page * rowsPerPage,
+        filters: [],
+        sort: []
+      }
+
+      if (debouncedSearchValue) {
+        filtersBody.filters.push({
+          key: debouncedSearchKey,
+          value: debouncedSearchValue,
+          operator: 'ilike'
+        })
+      }
       try {
         const response = await fetch('http://localhost:8000/search',
           {
@@ -57,7 +75,7 @@ const UserTable: React.FC = () => {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(filters)
+            body: JSON.stringify(filtersBody)
           });
 
         if (!response.ok) {
@@ -74,10 +92,8 @@ const UserTable: React.FC = () => {
         if (dp.length < rowsPerPage) {
           setDisableNext(true)
         } else {
-          const hasNextFilters = {
-            limit: 1,
-            offset: (page + 1) * rowsPerPage
-          }
+          const hasNextFilters = filtersBody
+          hasNextFilters.offset = (page + 1) * rowsPerPage
           const hasNext = await fetch('http://localhost:8000/search',
             {
               method: 'POST',
@@ -101,7 +117,7 @@ const UserTable: React.FC = () => {
       }
     };
     fetchData();
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, debouncedSearchValue]);
 
   const findHeaders = (data: Array<{ [key: string]: string }>) => {
     const keys: Array<string> = Object.keys(data[0]);
@@ -128,56 +144,120 @@ const UserTable: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center' }}>
-      <Paper sx={{ width: '80%', mb: 2, overflow: 'hidden' }}>
-        <TableContainer component={Paper} sx={{ maxHeight: 600 }} >
-          <Table stickyHeader>
-            <TableHead>
-              <TableRow sx={{ color: "blue" }}>
-                {
-                  dataPoints.length > 0 &&
-                  headers.map((header, index) => (
-                    <TableCell key={`header-${index}`}>{header}</TableCell>
-                  ))
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+        <TextField
+          label="Search Key"
+          variant="filled"
+          select
+          defaultValue={headers[0]}
+          value={searchKey}
+          focused
+          helperText="Please select the key to search by"
+          onChange={(e) => setSearchKey(e.target.value)}
+          style={{ marginRight: '15px' }}
+          sx={{
+            '& .MuiInputBase-input': {
+              backgroundColor: 'white',
+            },
+            '& .MuiFormHelperText-root': {
+              color: 'white',
+            },
+          }}
+        >
+          {
+            headers.map((option) => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))
+          }
+        </TextField>
+        <TextField
+          label="Search Value"
+          variant="filled"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          style={{ marginRight: '10px' }}
+          focused
+          sx={{
+            '& .MuiInputBase-input': {
+              backgroundColor: 'white',
+            },
+            '& .MuiFormHelperText-root': {
+              color: 'white',
+            },
+          }}
+        />
+      </div>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
+        <Paper sx={{ width: '80%', mb: 2, overflow: 'hidden' }}>
+          <TableContainer component={Paper} sx={{ maxHeight: 560 }} >
+            <Table stickyHeader>
+              <TableHead>
+                <TableRow sx={{ color: "blue" }}>
+                  {
+                    dataPoints.length > 0 &&
+                    headers.map((header, index) => (
+                      <TableCell key={`header-${index}`}>{header}</TableCell>
+                    ))
+                  }
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {dataPoints.length > 0 &&
+                  dataPoints.map((data, index) => (
+                    <TableRow key={`data-${index}`}>
+                      {
+                        headers.map((header, index) => (
+                          <TableCell key={`value-${index}`}>{data[header]}</TableCell>
+                        ))
+                      }
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          {
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 20]}
+              component="div"
+              count={-1}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              slotProps={{
+                actions: {
+                  nextButton: {
+                    disabled: disableNext
+                  }
                 }
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {dataPoints.length > 0 &&
-                dataPoints.map((data, index) => (
-                  <TableRow key={`data-${index}`}>
-                    {
-                      headers.map((header, index) => (
-                        <TableCell key={`value-${index}`}>{data[header]}</TableCell>
-                      ))
-                    }
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        {
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 20]}
-            component="div"
-            count={-1}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            slotProps={{
-              actions: {
-                nextButton: {
-                  disabled: disableNext
-                }
-              }
-            }}
-          />
-        }
-
-      </Paper>
+              }}
+            />
+          }
+        </Paper>
+      </div>
     </div >
   );
 };
+
+// Debounce Function
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 
 export default UserTable;

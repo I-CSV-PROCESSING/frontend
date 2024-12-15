@@ -50,13 +50,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onTabSwitch }) => {
             method: 'POST',
             body: formData,
           });
-        //  formData, {});
         if (response.status !== 200) {
           throw new Error("Upload file failed with code " + response.status);
         }
         setSuccess(true);
       } catch (err: any) {
-        console.log(err)
         setError(err);
       }
     }
