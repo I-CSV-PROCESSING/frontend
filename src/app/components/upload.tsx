@@ -1,13 +1,18 @@
 "use client"
 import React, { useState } from 'react';
-import { Box, Button, Card, CardActions, CardContent, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Typography
+} from '@mui/material';
 import { CloudUpload, Description } from '@mui/icons-material';
-import axios from 'axios';
 
 interface FileUploadProps {
   onTabSwitch: (event: React.SyntheticEvent, newValue: number) => void;
 }
-
 
 const FileUpload: React.FC<FileUploadProps> = ({ onTabSwitch }) => {
   const [file, setFile] = useState<File | null>(null);
@@ -40,9 +45,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onTabSwitch }) => {
       formData.append('csv_file', file);
 
       try {
-        const response = await axios.post('http://localhost:8000/csv-upload', formData, {});
+        const response = await fetch('http://localhost:8000/csv-upload',
+          {
+            method: 'POST',
+            body: formData,
+          });
+        //  formData, {});
         if (response.status !== 200) {
-          setError("Upload fail with code " + response.status);
+          throw new Error("Upload file failed with code " + response.status);
         }
         setSuccess(true);
       } catch (err: any) {

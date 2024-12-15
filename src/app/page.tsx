@@ -2,7 +2,8 @@
 "use client"
 import React, { useState } from 'react';
 import { Box, Tabs, Tab } from '@mui/material';
-import TabComponent from './components/upload';
+import UploadFileC from './components/upload';
+import DisplayTable from './components/displayItem';
 
 export default function Home() {
   const [value, setValue] = React.useState(0);
@@ -12,7 +13,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen">
+    <div>
       <Box sx={{ display: 'flex' }}
         className="h-1/8 flex justify-center mt-5">
         <Tabs
@@ -36,9 +37,10 @@ export default function Home() {
       </Box>
       <div className='h-3/4 content-center'>
         <CustomTabPanel value={value} index={0}>
-          <TabComponent onTabSwitch={handleChange}></TabComponent>
+          <UploadFileC onTabSwitch={handleChange}></UploadFileC>
         </CustomTabPanel>
         <CustomTabPanel value={value} index={1}>
+          <DisplayTable></DisplayTable>
         </CustomTabPanel>
       </div>
     </div>
